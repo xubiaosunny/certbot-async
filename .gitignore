@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+server_config.json
+clinet_config.json
+VERSION
+.vscode/*
