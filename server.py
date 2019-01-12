@@ -57,7 +57,7 @@ class GetCertHandler(MyRequestHandler):
             if file_name not in ['README', 'cert.pem', 'chain.pem', 'fullchain.pem', 'privkey.pem']:
                 continue
             with open(os.path.join(cert_path, file_name), 'r') as f:
-                ret['file_name'] = f.readlines()
+                ret[file_name] = f.read()
 
         self.render_success(ret)
 
