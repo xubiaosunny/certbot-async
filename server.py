@@ -32,7 +32,7 @@ class GetVersionHandler(MyRequestHandler):
     def get(self):
         if os.path.exists('VERSION'):
             with open('VERSION', 'r') as f:
-                version = f.readlines()
+                version = f.read()
             self.render_success({"version": version})
         else:
             with open('VERSION', 'w') as f:
