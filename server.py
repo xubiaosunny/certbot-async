@@ -5,13 +5,21 @@ import os
 import json
 import logging
 import tornado.log
+import random
+import string
+import functools
+import hmac
 
+
+def get_random_key():
+    return ''.join(random.sample(string.ascii_letters + string.digits, 32))
 
 config = {
     "domain": "xxx.xx",
     "certbot_path": "",
     "renew_period": 10,  # days
-    "port": 8000
+    "port": 8000,
+    "access_key": get_random_key(),
 }
 
 
@@ -27,8 +35,29 @@ class MyRequestHandler(tornado.web.RequestHandler):
     def render_error(self, msg):
         self._render_json({'status': 1, 'msg': msg})
 
+    def render_unauthorized(self):
+        self.render_error('Authorization fail')
+        logging.warning('%s authorization fail' % self.request.remote_ip)
+        
+
+
+def access_auth(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if ('Authorization' in self.request.headers) and ('Date' in self.request.headers):
+            h = hmac.new(config['access_key'].encode('utf-8'), self.request.headers['Date'].encode('utf-8'), digestmod='MD5')
+            if self.request.headers['Authorization'] != h.hexdigest():
+                self.render_unauthorized()
+                return
+            return func(self, *args, **kwargs)
+        else:
+            self.render_unauthorized()
+            return
+    return wrapper
+
 
 class GetVersionHandler(MyRequestHandler):
+    @access_auth
     def get(self):
         if os.path.exists('VERSION'):
             with open('VERSION', 'r') as f:
@@ -41,11 +70,13 @@ class GetVersionHandler(MyRequestHandler):
 
 
 class RegistrationHandler(MyRequestHandler):
+    @access_auth
     def get(self):
         self.render_success({})
 
 
 class GetCertHandler(MyRequestHandler):
+    @access_auth
     def get(self):
         ret = {}
         cert_path = os.path.join('/etc/letsencrypt/live/', config['domain'])
