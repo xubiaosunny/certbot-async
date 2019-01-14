@@ -22,6 +22,13 @@ config = {
     "renew_period": 10,  # days
     "port": 8000,
     "access_key": get_random_key(),
+
+    "smtp_server": "",
+    "smtp_port": "",
+    "smtp_ssl": True,
+    "smtp_email": "",
+    "smtp_password": "",
+    "notify_receiver": "",
 }
 
 
@@ -105,6 +112,7 @@ class GetCertHandler(MyRequestHandler):
             with open(os.path.join(cert_path, file_name), 'r') as f:
                 ret[file_name] = f.read()
 
+        send_notify('%s download certificate' % self.request.remote_ip)
         self.render_success(ret)
 
 
@@ -138,12 +146,39 @@ def init_log():
     logger.handlers[0].setFormatter(fm)
 
 
+def send_notify(message, subject="Certificate Synchronization"):
+    from email import encoders
+    from email.header import Header
+    from email.mime.text import MIMEText
+    from email.utils import parseaddr, formataddr
+    import smtplib
+
+    def _format_addr(s):
+        name, addr = parseaddr(s)
+        return formataddr((Header(name, 'utf-8').encode(), addr))
+
+    msg = MIMEText(message, 'plain', 'utf-8')
+    msg['From'] = _format_addr('certbot-async <%s>' % config['smtp_email'])
+    msg['To'] = _format_addr(config['notify_receiver'])
+    msg['Subject'] = Header(subject, 'utf-8').encode()
+
+    if config['smtp_ssl']:
+        server = smtplib.SMTP_SSL(config['smtp_server'], config['smtp_port'])
+    else:
+        server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
+    server.set_debuglevel(1)
+    server.login(config['smtp_email'], config['smtp_password'])
+    server.sendmail(config['smtp_email'], [config['notify_receiver']], msg.as_string())
+    server.quit()
+
+
 def certbot_renew():
     from OpenSSL import crypto
     import datetime
     cert_file = '/etc/letsencrypt/live/%s/fullchain.pem' % config['domain']
     if not os.path.exists(cert_file):
         logging.error('certificate not exist')
+        send_notify('certificate not exist')
         return
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
     not_after_str = cert.get_notAfter().decode('utf-8')
@@ -153,6 +188,7 @@ def certbot_renew():
             if config['certbot_path'] else "certbot-auto renew"
         p = os.popen(cmd).read()
         logging.info(p)
+        send_notify(p)
     else:
         logging.info("notAfter is %s, renew skipped" % not_after_str)
 
@@ -162,6 +198,7 @@ if __name__ == "__main__":
     init_log()
     app = make_app()
     app.listen(config['port'])
+    send_notify('certbot-async server starting')
     renew_period_ms = int(86400000 * float(config['renew_period']))
     tornado.ioloop.PeriodicCallback(certbot_renew, renew_period_ms).start()
     tornado.ioloop.IOLoop.current().start()
