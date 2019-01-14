@@ -41,12 +41,26 @@ class MyRequestHandler(tornado.web.RequestHandler):
         self.render_error('Authorization fail')
         logging.warning('%s authorization fail' % self.request.remote_ip)
 
+    def render_forbidden(self):
+        self.render_error('Forbidden')
+        logging.warning('%s Forbidden' % self.request.remote_ip)
+
 
 def access_auth(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        if ('Authorization' in self.request.headers) and ('Date' in self.request.headers):
-            h = hmac.new(config['access_key'].encode('utf-8'), self.request.headers['Date'].encode('utf-8'), digestmod='MD5')
+        if os.path.exists('whitelist.txt'):
+            with open('whitelist.txt', 'r') as f:
+                whitelist = f.read().split('\n')
+            if self.request.remote_ip not in whitelist:
+                self.render_forbidden()
+                return
+
+        if ('Authorization' in self.request.headers) and \
+           ('Date' in self.request.headers):
+            h = hmac.new(
+                config['access_key'].encode('utf-8'),
+                self.request.headers['Date'].encode('utf-8'), digestmod='MD5')
             if self.request.headers['Authorization'] != h.hexdigest():
                 self.render_unauthorized()
                 return

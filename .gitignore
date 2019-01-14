@@ -107,3 +107,4 @@ server_config.json
 client_config.json
 VERSION
 .vscode/*
+whitelist.txt
