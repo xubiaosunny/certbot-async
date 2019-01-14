@@ -9,6 +9,8 @@ import random
 import string
 import functools
 import hmac
+import hashlib
+import fcntl
 
 
 def get_random_key():
@@ -40,7 +42,6 @@ class MyRequestHandler(tornado.web.RequestHandler):
         logging.warning('%s authorization fail' % self.request.remote_ip)
         
 
-
 def access_auth(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -59,14 +60,14 @@ def access_auth(func):
 class GetVersionHandler(MyRequestHandler):
     @access_auth
     def get(self):
-        if os.path.exists('VERSION'):
-            with open('VERSION', 'r') as f:
-                version = f.read()
-            self.render_success({"version": version})
-        else:
-            with open('VERSION', 'w') as f:
-                f.write('0')
-            self.render_success({"version": '0'})
+        cert_file = '/etc/letsencrypt/live/%s/fullchain.pem' % config['domain']
+        if not os.path.exists(cert_file):
+            logging.error('certificate not exist')
+            self.render_error('certificate not exist')
+            return
+        with open(cert_file, 'rb') as f:
+            fmd5 = hashlib.md5(f.read())
+        self.render_success({"version": fmd5.hexdigest()})
 
 
 class RegistrationHandler(MyRequestHandler):
