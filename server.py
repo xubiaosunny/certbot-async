@@ -40,7 +40,7 @@ class MyRequestHandler(tornado.web.RequestHandler):
     def render_unauthorized(self):
         self.render_error('Authorization fail')
         logging.warning('%s authorization fail' % self.request.remote_ip)
-        
+
 
 def access_auth(func):
     @functools.wraps(func)
