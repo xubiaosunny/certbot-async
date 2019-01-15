@@ -109,3 +109,4 @@ VERSION
 .vscode/*
 whitelist.txt
 letsencrypt/*
+*.db

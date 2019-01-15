@@ -39,7 +39,11 @@ def get_headers():
         config['access_key'].encode('utf-8'),
         request_date.encode('utf-8'),
         digestmod='MD5')
-    return {'Authorization': h.hexdigest(), 'Date': request_date}
+    return {
+        'Authorization': h.hexdigest(),
+        'Date': request_date,
+        'Content-Type': 'application/json'
+        }
 
 
 def check_resp(data):
@@ -57,7 +61,7 @@ def request(url, method="GET", body=None):
     elif method == "POST":
         res = requests.post(
             '%s%s' % (config['server_host'], url),
-            headers=get_headers(), data=body)
+            headers=get_headers(), data=json.dumps(body))
     else:
         raise ValueError('method "%s" not support' % method)
     data = res.json()

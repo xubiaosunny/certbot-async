@@ -51,6 +51,9 @@ class MyRequestHandler(tornado.web.RequestHandler):
     def render_forbidden(self):
         self.render_error('Forbidden')
         logging.warning('%s Forbidden' % self.request.remote_ip)
+    
+    def get_json(self):
+        return json.loads(self.request.body)
 
 
 def access_auth(func):
@@ -94,7 +97,27 @@ class GetVersionHandler(MyRequestHandler):
 class RegistrationHandler(MyRequestHandler):
     @access_auth
     def post(self):
-        self.render_success({"publickey": None})
+        import sqlite3
+        # update db
+        data = self.get_json()
+        conn = sqlite3.connect('server.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM registration where ip=?;", (self.request.remote_ip, ))
+        if cursor.fetchall():
+            cursor.execute(
+                'update registration set user = ?, ssh_port = ?, cert_dir = ?, after_script = ? where ip=?;', 
+                (data['user'], data['ssh_port'], data['cert_dir'], data['after_script'], self.request.remote_ip))
+        else:
+            cursor.execute(
+                'insert into registration (ip, user, ssh_port, cert_dir, after_script) values (?, ?, ?, ?, ?);', 
+                (self.request.remote_ip, data['user'], data['ssh_port'], data['cert_dir'], data['after_script']))
+        cursor.close()
+        conn.commit()
+        conn.close()
+        # get publickey
+        publickey_path = os.path.join(os.path.expanduser('~'), '.ssh/id_rsa.pub')
+        with open(publickey_path, 'r') as f:
+            self.render_success({"publickey": f.read().replace("\n", "")})
 
 
 class GetCertHandler(MyRequestHandler):
@@ -166,9 +189,12 @@ def send_notify(message, subject="Certificate Synchronization"):
         server = smtplib.SMTP_SSL(config['smtp_server'], config['smtp_port'])
     else:
         server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
-    server.set_debuglevel(1)
-    server.login(config['smtp_email'], config['smtp_password'])
-    server.sendmail(config['smtp_email'], [config['notify_receiver']], msg.as_string())
+    # server.set_debuglevel(1)
+    try:
+        server.login(config['smtp_email'], config['smtp_password'])
+        server.sendmail(config['smtp_email'], [config['notify_receiver']], msg.as_string())
+    except Exception as e:
+        logging.warning(e)
     server.quit()
 
 
@@ -189,13 +215,39 @@ def certbot_renew():
         p = os.popen(cmd).read()
         logging.info(p)
         send_notify(p)
+        send_cert_for_registration()
     else:
         logging.info("notAfter is %s, renew skipped" % not_after_str)
+
+
+def init_db():
+    import sqlite3
+    conn = sqlite3.connect('server.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            '''create table registration (
+                ip varchar(25) primary key,
+                user varchar(50),
+                ssh_port INTEGER,
+                cert_dir varchar(50),
+                after_script varchar(250)
+                )''')
+    except Exception:
+        pass
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
+def send_cert_for_registration():
+    pass
 
 
 if __name__ == "__main__":
     load_config()
     init_log()
+    init_db()
     app = make_app()
     app.listen(config['port'])
     send_notify('certbot-async server starting')
