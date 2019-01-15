@@ -108,3 +108,4 @@ client_config.json
 VERSION
 .vscode/*
 whitelist.txt
+letsencrypt/*
