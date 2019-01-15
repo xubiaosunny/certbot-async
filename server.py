@@ -93,8 +93,8 @@ class GetVersionHandler(MyRequestHandler):
 
 class RegistrationHandler(MyRequestHandler):
     @access_auth
-    def get(self):
-        self.render_success({})
+    def post(self):
+        self.render_success({"publickey": None})
 
 
 class GetCertHandler(MyRequestHandler):

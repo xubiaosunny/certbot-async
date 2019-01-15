@@ -6,13 +6,17 @@ import json
 import sys
 import hashlib
 import fcntl
+import getpass
+import argparse
 
 
 config = {
-    "host": "127.0.0.1:8000",
+    "server_host": "127.0.0.1:8000",
     "access_key": '',
     "cert_dir": './letsencrypt',
-    "script": "echo 'success'"
+    "after_script": "echo 'success'",
+
+    "ssh_port": "22",
 }
 
 
@@ -46,8 +50,16 @@ def check_resp(data):
         sys.exit(0)
 
 
-def request(url):
-    res = requests.get('%s%s' % (config['host'], url), headers=get_headers())
+def request(url, method="GET", body=None):
+    if method == "GET":
+        res = requests.get(
+            '%s%s' % (config['server_host'], url), headers=get_headers())
+    elif method == "POST":
+        res = requests.post(
+            '%s%s' % (config['server_host'], url),
+            headers=get_headers(), data=body)
+    else:
+        raise ValueError('method "%s" not support' % method)
     data = res.json()
     if str(data['status']) != '0':
         print(data['msg'])
@@ -62,8 +74,8 @@ def get_cert():
             with open(os.path.join(config['cert_dir'], name), 'w') as f:
                 fcntl.flock(f.fileno(), fcntl.LOCK_EX)
                 f.write(content)
-        p = os.popen(config['script']).read()
-        print(p)    
+        p = os.popen(config['after_script']).read()
+        print(p)
 
     if not os.path.exists(config['cert_dir']):
         os.makedirs(config['cert_dir'])
@@ -79,6 +91,38 @@ def get_cert():
         _get_cert()
 
 
+def register_service():
+    abs_cert_dir = config['cert_dir'] if config['cert_dir'].startswith('/') \
+        else os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), config['cert_dir'])
+    body = {
+        "user": getpass.getuser(),
+        "ssh_port": config['ssh_port'],
+        "cert_dir": abs_cert_dir,
+        "after_script": config['after_script'],
+    }
+    data = request('/registration', method='POST', body=body)
+
+    authorized_keys_path = os.path.join(
+        os.path.expanduser('~'), '.ssh/authorized_keys')
+    with open(authorized_keys_path, 'r') as f:
+        authorized_keys = filter(
+            lambda k: k.startswith('ssh-rsa'), f.read().split('\n'))
+    if data['publickey'] not in authorized_keys:
+        p = os.popen(
+            'echo "%s" >> %s' % (data['publickey'], authorized_keys_path)
+            ).read()
+        print(p)
+
+
 if __name__ == "__main__":
     load_config()
-    get_cert()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-rs", "--register", help="register service mode", action="store_true")
+    args = parser.parse_args()
+    if args.register:
+        register_service()
+    else:
+        get_cert()
