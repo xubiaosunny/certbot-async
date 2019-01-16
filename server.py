@@ -51,9 +51,12 @@ class MyRequestHandler(tornado.web.RequestHandler):
     def render_forbidden(self):
         self.render_error('Forbidden')
         logging.warning('%s Forbidden' % self.request.remote_ip)
-    
+
     def get_json(self):
-        return json.loads(self.request.body)
+        body = self.request.body
+        if isinstance(self.request.body, bytes):
+            body = body.decode('utf-8')
+        return json.loads(body)
 
 
 def access_auth(func):
@@ -180,22 +183,22 @@ def send_notify(message, subject="Certificate Synchronization"):
         name, addr = parseaddr(s)
         return formataddr((Header(name, 'utf-8').encode(), addr))
 
-    msg = MIMEText(message, 'plain', 'utf-8')
-    msg['From'] = _format_addr('certbot-async <%s>' % config['smtp_email'])
-    msg['To'] = _format_addr(config['notify_receiver'])
-    msg['Subject'] = Header(subject, 'utf-8').encode()
-
-    if config['smtp_ssl']:
-        server = smtplib.SMTP_SSL(config['smtp_server'], config['smtp_port'])
-    else:
-        server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
-    # server.set_debuglevel(1)
     try:
+        msg = MIMEText(message, 'plain', 'utf-8')
+        msg['From'] = _format_addr('certbot-async <%s>' % config['smtp_email'])
+        msg['To'] = _format_addr(config['notify_receiver'])
+        msg['Subject'] = Header(subject, 'utf-8').encode()
+
+        if config['smtp_ssl']:
+            server = smtplib.SMTP_SSL(config['smtp_server'], config['smtp_port'])
+        else:
+            server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
+    # server.set_debuglevel(1)
         server.login(config['smtp_email'], config['smtp_password'])
         server.sendmail(config['smtp_email'], [config['notify_receiver']], msg.as_string())
+        server.quit()
     except Exception as e:
         logging.warning(e)
-    server.quit()
 
 
 def certbot_renew():
