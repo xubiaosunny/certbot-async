@@ -31,6 +31,8 @@ config = {
     "notify_receiver": "",
 }
 
+CERT_FILE_NAME_LIST = ['README', 'cert.pem', 'chain.pem', 'fullchain.pem', 'privkey.pem']
+
 
 class MyRequestHandler(tornado.web.RequestHandler):
     def _render_json(self, body):
@@ -133,7 +135,7 @@ class GetCertHandler(MyRequestHandler):
             return
 
         for file_name in os.listdir(cert_path):
-            if file_name not in ['README', 'cert.pem', 'chain.pem', 'fullchain.pem', 'privkey.pem']:
+            if file_name not in CERT_FILE_NAME_LIST:
                 continue
             with open(os.path.join(cert_path, file_name), 'r') as f:
                 ret[file_name] = f.read()
@@ -244,7 +246,34 @@ def init_db():
 
 
 def send_cert_for_registration():
-    pass
+    import sqlite3
+    conn = sqlite3.connect('server.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM registration;")
+    registration_list = cursor.fetchall()
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+    cert_path = os.path.join('/etc/letsencrypt/live/', config['domain'])
+    if not os.path.exists('./letsencrypt'):
+        os.makedirs('./letsencrypt')
+    for file_name in os.listdir(cert_path):
+        if file_name not in CERT_FILE_NAME_LIST:
+            continue
+        with open(os.path.join(cert_path, file_name), 'r') as f:
+            _f = open(os.path.join('./letsencrypt', file_name), 'w')
+            _f.write(f.read())
+            _f.close()
+
+    rsync_cmd = "rsync -e 'ssh -p %d' -a ./letsencrypt/ %s@%s:%s"
+    script_cmd = '''ssh -p %d  %s@%s "%s"'''
+    for reg in registration_list:
+        p = os.popen(rsync_cmd % (reg[2], reg[1], reg[0], reg[3])).read()
+        logging.info(p)
+        p = os.popen(script_cmd % (reg[2], reg[1], reg[0], reg[4])).read()
+        logging.info(p)
+        send_notify('send cert to %s successfully' % reg[0])
 
 
 if __name__ == "__main__":
