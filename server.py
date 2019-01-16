@@ -32,6 +32,7 @@ config = {
 }
 
 CERT_FILE_NAME_LIST = ['README', 'cert.pem', 'chain.pem', 'fullchain.pem', 'privkey.pem']
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 class MyRequestHandler(tornado.web.RequestHandler):
@@ -256,13 +257,14 @@ def send_cert_for_registration():
     conn.close()
 
     cert_path = os.path.join('/etc/letsencrypt/live/', config['domain'])
-    if not os.path.exists('./letsencrypt'):
-        os.makedirs('./letsencrypt')
+    tmp_dir = os.path.join(BASE_PATH, 'letsencrypt')
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
     for file_name in os.listdir(cert_path):
         if file_name not in CERT_FILE_NAME_LIST:
             continue
         with open(os.path.join(cert_path, file_name), 'r') as f:
-            _f = open(os.path.join('./letsencrypt', file_name), 'w')
+            _f = open(os.path.join(tmp_dir, file_name), 'w')
             _f.write(f.read())
             _f.close()
 
