@@ -120,6 +120,12 @@ class RegistrationHandler(MyRequestHandler):
         cursor.close()
         conn.commit()
         conn.close()
+        # set .ssh/known_hosts
+        client_publickey = os.popen("ssh-keyscan -t rsa %s" % self.request.remote_ip).read()
+        known_hosts_path = os.path.join(os.path.expanduser('~'), '.ssh/known_hosts')
+        p = os.popen('''echo "%s" >>%s''' % (client_publickey, known_hosts_path)).read()
+        if p:
+            logging.info(p)
         # get publickey
         publickey_path = os.path.join(os.path.expanduser('~'), '.ssh/id_rsa.pub')
         with open(publickey_path, 'r') as f:
