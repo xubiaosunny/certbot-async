@@ -272,9 +272,11 @@ def send_cert_for_registration():
     script_cmd = '''ssh -p %d  %s@%s "%s"'''
     for reg in registration_list:
         p = os.popen(rsync_cmd % (reg[2], reg[1], reg[0], reg[3])).read()
-        logging.info(p)
+        if p:
+            logging.info(p)
         p = os.popen(script_cmd % (reg[2], reg[1], reg[0], reg[4])).read()
-        logging.info(p)
+        if p:
+            logging.info(p)
         send_notify('send cert to %s successfully' % reg[0])
 
 
