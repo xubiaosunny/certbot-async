@@ -121,11 +121,22 @@ class RegistrationHandler(MyRequestHandler):
         conn.commit()
         conn.close()
         # set .ssh/known_hosts
-        client_publickey = os.popen("ssh-keyscan -t rsa %s" % self.request.remote_ip).read()
         known_hosts_path = os.path.join(os.path.expanduser('~'), '.ssh/known_hosts')
-        p = os.popen('''echo "%s" >>%s''' % (client_publickey, known_hosts_path)).read()
-        if p:
-            logging.info(p)
+        client_publickey = os.popen("ssh-keyscan -t rsa %s" % self.request.remote_ip).read()
+        with open(known_hosts_path) as f:
+            for line in f:
+                line_s = line.replace('\n', '')
+                if not line_s.startswith('#') and line_s.split(' ', 1)[0] == self.request.remote_ip:
+                    key_l = list(filter(lambda s: s.startswith(self.request.remote_ip), client_publickey.split('\n')))
+                    if key_l and key_l[0] != line_s:
+                        message = '%s ssh publickey already changed, please handle it manually!!' % self.request.remote_ip
+                        logging.warning(message)
+                        send_notify(message)
+                    break
+            else:
+                p = os.popen('''echo "%s" >>%s''' % (client_publickey, known_hosts_path)).read()
+                if p:
+                    logging.info(p)
         # get publickey
         publickey_path = os.path.join(os.path.expanduser('~'), '.ssh/id_rsa.pub')
         with open(publickey_path, 'r') as f:
