@@ -127,6 +127,7 @@ class RegistrationHandler(MyRequestHandler):
             for line in f:
                 line_s = line.replace('\n', '')
                 if not line_s.startswith('#') and line_s.split(' ', 1)[0] == self.request.remote_ip:
+                    logging.info('%s ssh publickey already exist!' % self.request.remote_ip)
                     key_l = list(filter(lambda s: s.startswith(self.request.remote_ip), client_publickey.split('\n')))
                     if key_l and key_l[0] != line_s:
                         message = '%s ssh publickey already changed, please handle it manually!!' % self.request.remote_ip
@@ -135,6 +136,7 @@ class RegistrationHandler(MyRequestHandler):
                     break
             else:
                 p = os.popen('''echo "%s" >>%s''' % (client_publickey, known_hosts_path)).read()
+                logging.info('%s ssh publickey add!' % self.request.remote_ip)
                 if p:
                     logging.info(p)
         # get publickey
