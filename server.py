@@ -111,7 +111,7 @@ class RegistrationHandler(MyRequestHandler):
         cursor.execute("SELECT * FROM registration where ip=?;", (self.request.remote_ip, ))
         if cursor.fetchall():
             cursor.execute(
-                'update registration set user = ?, ssh_port = ?, cert_dir = ?, after_script = ? where ip=?;', 
+                "update registration set user = ?, ssh_port = ?, cert_dir = ?, after_script = ?, last_timestamp=strftime('%s', 'now') where ip=?;", 
                 (data['user'], data['ssh_port'], data['cert_dir'], data['after_script'], self.request.remote_ip))
         else:
             cursor.execute(
@@ -243,10 +243,11 @@ def init_db():
                 user varchar(50),
                 ssh_port INTEGER,
                 cert_dir varchar(50),
-                after_script varchar(250)
+                after_script varchar(250),
+                last_timestamp timestamp default (strftime('%s', 'now'))
                 )''')
-    except Exception:
-        pass
+    except Exception as e:
+        logging.info(e)
     cursor.close()
     conn.commit()
     conn.close()
@@ -254,13 +255,11 @@ def init_db():
 
 def send_cert_for_registration():
     import sqlite3
+    import time
     conn = sqlite3.connect('server.db')
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM registration;")
     registration_list = cursor.fetchall()
-    cursor.close()
-    conn.commit()
-    conn.close()
 
     cert_path = os.path.join('/etc/letsencrypt/live/', config['domain'])
     tmp_dir = os.path.join(BASE_PATH, 'letsencrypt')
@@ -277,6 +276,11 @@ def send_cert_for_registration():
     rsync_cmd = "rsync -e 'ssh -p %d' -a ./letsencrypt/ %s@%s:%s"
     script_cmd = '''ssh -p %d  %s@%s "%s"'''
     for reg in registration_list:
+        if int(time.time()) - reg[5] > 5184000:
+            # last_register_time more than 60 days
+            cursor.execute("DELETE FROM registration WHERE ip=?;", (reg[0], ))
+            continue
+
         p = os.popen(rsync_cmd % (reg[2], reg[1], reg[0], reg[3])).read()
         if p:
             logging.info(p)
@@ -284,6 +288,10 @@ def send_cert_for_registration():
         if p:
             logging.info(p)
         send_notify('send cert to %s successfully' % reg[0])
+
+    cursor.close()
+    conn.commit()
+    conn.close()
 
 
 if __name__ == "__main__":
