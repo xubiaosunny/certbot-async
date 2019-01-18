@@ -57,11 +57,12 @@ def check_resp(data):
 def request(url, method="GET", body=None):
     if method == "GET":
         res = requests.get(
-            '%s%s' % (config['server_host'], url), headers=get_headers())
+            '%s%s' % (config['server_host'], url),
+            headers=get_headers(), verify=False)
     elif method == "POST":
         res = requests.post(
-            '%s%s' % (config['server_host'], url),
-            headers=get_headers(), data=json.dumps(body))
+            '%s%s' % (config['server_host'], url), headers=get_headers(),
+            data=json.dumps(body), verify=False)
     else:
         raise ValueError('method "%s" not support' % method)
     data = res.json()
