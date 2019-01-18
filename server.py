@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import tornado.ioloop
 import tornado.web
+import tornado.httpserver
 import os
 import json
 import logging
@@ -11,6 +12,7 @@ import functools
 import hmac
 import hashlib
 import fcntl
+import sys
 
 
 def get_random_key():
@@ -308,11 +310,32 @@ def send_cert_for_registration():
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-r", "--renew", help="Renewal immediately", action="store_true")
+    parser.add_argument(
+        "-s", "--ssl", help="Use https", action="store_true")
+    args = parser.parse_args()
+
+    # Init
     load_config()
     init_log()
     init_db()
+
+    if args.renew:
+        certbot_renew()
+        logging.info('Renew Finished')
+        sys.exit(0)
+
+    # server
     app = make_app()
-    app.listen(config['port'])
+    ssl_options = {
+        "certfile": '/etc/letsencrypt/live/%s/cert.pem' % config['domain'],
+        "keyfile": '/etc/letsencrypt/live/%s/privkey.pem' % config['domain'],
+    } if args.ssl else None
+    server = tornado.httpserver.HTTPServer(app, ssl_options=ssl_options)
+    server.listen(config['port'])
     send_notify('certbot-async server starting')
     renew_period_ms = int(86400000 * float(config['renew_period']))
     tornado.ioloop.PeriodicCallback(certbot_renew, renew_period_ms).start()

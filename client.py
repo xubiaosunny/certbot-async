@@ -11,7 +11,7 @@ import argparse
 
 
 config = {
-    "server_host": "127.0.0.1:8000",
+    "server_host": "http://127.0.0.1:8000",
     "access_key": '',
     "cert_dir": './letsencrypt',
     "after_script": "echo 'success'",
