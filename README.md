@@ -10,16 +10,16 @@
 
 将项目克隆到`/root/certbot-asnyc`，如在其他位置需自行修改命令参数
 
-在项目下创建`server_config.josn`来配置相关设置，可选配置参数：
+在项目下创建`server_config.josn`来配置相关设置，可选配置参数：
 
 ```json
 {
-    "domain": "xxx.xx",  // 申请证书的域名，如 xubiaosunny.online
-    "certbot_path": "",  // certbot-auto 文件位置，建议将其放入/usr/bin下
-    "renew_period": 10,  // 续租周期，默认10天尝试续租一次
+    "domain": "xxx.xx",  // 申请证书的域名，如 xubiaosunny.online
+    "certbot_path": "",  // certbot-auto 文件位置，建议将其放入/usr/bin下
+    "renew_period": 10,  // 续租周期，默认10天尝试续租一次
     "port": 8000,  // 服务监听端口
     "access_key": "",  // 认证key
-    // 配置邮箱以便通知续租情况，可不配置
+    // 配置邮箱以便通知续租情况，可不配置
     "smtp_server": "", // 邮箱服务器地址
     "smtp_port": "",  // 邮箱服务器端口
     "smtp_ssl": true,  // 是否启用SSL
@@ -29,7 +29,7 @@
 }
 ```
 
-在项目下创建`whitelist.txt`以启用在白名单功能，将允许访问的ip一行一个写入文件内。删除该文件则所有ip均课访问。
+在项目下创建`whitelist.txt`以启用在白名单功能，将允许访问的ip一行一个写入文件内。删除该文件则所有ip均课访问。
 
 服务端启动可选阐述：
 
@@ -86,13 +86,13 @@ pipenv run python ./server.py
 
 ## 客户端
 
-在项目下创建`client_config.josn`来配置相关设置，可选配置参数
+在项目下创建`client_config.josn`来配置相关设置，可选配置参数
 
 ```json
 {
     "server_host": "http://127.0.0.1:8000", // 服务端地址
-    "access_key": "",  // 认证key，需与服务端一样
-    "cert_dir": "./letsencrypt",  // 证书存放位置
+    "access_key": "",  // 认证key，需与服务端一样
+    "cert_dir": "./letsencrypt",  // 证书存放位置
     "after_script": "echo $HOME",  // 获取证书后执行的命令 
     "ssh_port": "22" // 本地ssh端口
 }
@@ -100,9 +100,9 @@ pipenv run python ./server.py
 
 客户端有两种工作模式：
 
-### 主动模式
+### 主动模式
 
-直接重服务端下载证书文件
+直接重服务端下载证书文件
 
 ```
 pipenv run python ./client.py
