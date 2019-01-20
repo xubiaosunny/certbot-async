@@ -63,7 +63,7 @@ docker run -d -it \
 -v /etc/letsencrypt:/etc/letsencrypt \
 -v /root/.ssh:/root/.ssh \
 -p 8000:8000 \
---rm --name certboot-async certbot-async python ./server.py -s
+--rm --name certboot-async certbot-async python ./server.py
 ```
 
 ### 使用python3直接启动
