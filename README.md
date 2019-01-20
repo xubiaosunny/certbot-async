@@ -8,9 +8,10 @@
 
 [https://www.hi-linux.com/posts/6968.html](https://www.hi-linux.com/posts/6968.html)
 
+
 将项目克隆到`/root/certbot-asnyc`，如在其他位置需自行修改命令参数
 
-该服务须以管理员权限运行，因为Letsencrypt目录的用户为root。
+该服务须以管理员权限运行，因为Letsencrypt目录的用户为root。如果root用户没有生成过ssh key，还需先使用`ssh-keygen`生成公钥。
 
 在项目下创建`server_config.json`来配置相关设置，可选配置参数：
 
