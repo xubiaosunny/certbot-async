@@ -12,7 +12,7 @@
 
 该服务须以管理员权限运行，因为Letsencrypt目录的用户为root。
 
-在项目下创建`server_config.josn`来配置相关设置，可选配置参数：
+在项目下创建`server_config.json`来配置相关设置，可选配置参数：
 
 ```json
 {
@@ -88,7 +88,7 @@ pipenv run python ./server.py
 
 ## 客户端
 
-在项目下创建`client_config.josn`来配置相关设置，可选配置参数
+在项目下创建`client_config.json`来配置相关设置，可选配置参数
 
 ```json
 {
