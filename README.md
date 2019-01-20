@@ -104,7 +104,7 @@ pipenv run python ./server.py
 
 ### 主动模式
 
-直接重服务端下载证书文件
+直接从服务端下载证书文件
 
 ```
 pipenv run python ./client.py
