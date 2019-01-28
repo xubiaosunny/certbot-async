@@ -69,6 +69,15 @@ docker run -d -it \
 
 ### 使用python3直接启动
 
+由于我使用pypthon3.7开发，若没有python3.7环境，则需安装
+
+```
+wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tar.xz && \
+    tar -xvf Python-3.7.2.tar.xz && \
+    cd Python-3.7.2 && \
+    ./configure && make && sudo make install
+```
+
 安装`pipenv`
 
 ```shell
