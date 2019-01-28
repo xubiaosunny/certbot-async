@@ -19,6 +19,7 @@
 {
     "domain": "xxx.xx",  // 申请证书的域名，如 xubiaosunny.online
     "certbot_path": "",  // certbot-auto 文件位置，建议将其放入/usr/bin下
+    "certbot_auth_hook": "./authenticator_demo.sh",  // 认证钩子脚本
     "renew_period": 10,  // 续租周期，默认10天尝试续租一次
     "port": 8000,  // 服务监听端口
     "access_key": "",  // 认证key
@@ -40,6 +41,16 @@
 -r, --renew  直接续租，不启动服务
 -s, --ssl    使用https启动服务，默认使用http
 ```
+
+认证钩子：
+
+续租的时候也需要DNS认证或者文件认证（貌似范域名只可以DNS认证），所以需要自动化脚本添加DNS记录（TXT）。官方文档及示例：
+
+[https://certbot.eff.org/docs/using.html#pre-and-post-validation-hooks](https://certbot.eff.org/docs/using.html#pre-and-post-validation-hooks)
+
+一个哥们对接了几个厂商的API（aliyun/tencentyun/godaddy），可以直接拿来用：
+
+[https://github.com/ywdblog/certbot-letencrypt-wildcardcertificates-alydns-au](https://github.com/ywdblog/certbot-letencrypt-wildcardcertificates-alydns-au)
 
 ### Docker启动
 

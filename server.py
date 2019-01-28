@@ -21,6 +21,7 @@ def get_random_key():
 config = {
     "domain": "xxx.xx",
     "certbot_path": "",
+    "certbot_auth_hook": "./authenticator_demo.sh",
     "renew_period": 10,  # days
     "port": 8000,
     "access_key": get_random_key(),
@@ -237,8 +238,9 @@ def certbot_renew():
     not_after_str = cert.get_notAfter().decode('utf-8')
     not_after = datetime.datetime.strptime(not_after_str, '%Y%m%d%H%M%SZ')
     if (not_after - datetime.datetime.now()).days < 30:
-        cmd = "{} renew".format(config['certbot_path']) \
-            if config['certbot_path'] else "certbot-auto renew"
+        cmd = "{} renew --manual-auth-hook {}".format(
+            config['certbot_path'] or 'certbot-auto',
+            config['certbot_auth_hook'])
         p = os.popen(cmd).read()
         logging.info(p)
         send_notify(p)
