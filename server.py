@@ -236,7 +236,7 @@ def certbot_renew():
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
     not_after_str = cert.get_notAfter().decode('utf-8')
     not_after = datetime.datetime.strptime(not_after_str, '%Y%m%d%H%M%SZ')
-    if (not_after - datetime.datetime.now()).days <= 20:
+    if (not_after - datetime.datetime.now()).days < 30:
         cmd = "{} renew".format(config['certbot_path']) \
             if config['certbot_path'] else "certbot-auto renew"
         p = os.popen(cmd).read()
@@ -323,8 +323,9 @@ if __name__ == "__main__":
     init_log()
     init_db()
 
+    certbot_renew()
+
     if args.renew:
-        certbot_renew()
         logging.info('Renew Finished')
         sys.exit(0)
 
