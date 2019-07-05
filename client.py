@@ -74,7 +74,7 @@ def request(url, method="GET", body=None):
 
 def get_cert():
     def _get_cert():
-        certs = request('/get_cert')
+        certs = request('certbot-async/get_cert')
         for name, content in certs.items():
             with open(os.path.join(config['cert_dir'], name), 'w') as f:
                 fcntl.flock(f.fileno(), fcntl.LOCK_EX)
@@ -85,7 +85,7 @@ def get_cert():
     if not os.path.exists(config['cert_dir']):
         os.makedirs(config['cert_dir'])
 
-    data = request('/get_version')
+    data = request('certbot-async/get_version')
     cert_file = os.path.join(config['cert_dir'], 'fullchain.pem')
     if os.path.exists(cert_file):
         with open(cert_file, 'rb') as f:
@@ -106,7 +106,7 @@ def register_service():
         "cert_dir": abs_cert_dir,
         "after_script": config['after_script'],
     }
-    data = request('/registration', method='POST', body=body)
+    data = request('certbot-async/registration', method='POST', body=body)
 
     authorized_keys_path = os.path.join(
         os.path.expanduser('~'), '.ssh/authorized_keys')
