@@ -169,9 +169,9 @@ class GetCertHandler(MyRequestHandler):
 
 def make_app():
     return tornado.web.Application([
-        (r"certbot-async/get_version", GetVersionHandler),
-        (r"certbot-async/registration", RegistrationHandler),
-        (r"certbot-async/get_cert", GetCertHandler),
+        (r"/certbot-async/get_version", GetVersionHandler),
+        (r"/certbot-async/registration", RegistrationHandler),
+        (r"/certbot-async/get_cert", GetCertHandler),
     ])
 
 
