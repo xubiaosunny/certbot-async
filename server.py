@@ -39,6 +39,10 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 class MyRequestHandler(tornado.web.RequestHandler):
+    def __init__(self, application, request, **kwargs):
+        super(MyRequestHandler, self).__init__(application, request, **kwargs)
+        self.request_ip = self.request.headers.get('X-Forwarded-For', '').split(',')[0] or self.request.remote_ip
+
     def _render_json(self, body):
         self.set_header('Content-Type', 'application/json; charset=UTF-8')
         self.write(json.dumps(body))
@@ -70,8 +74,8 @@ def access_auth(func):
     def wrapper(self, *args, **kwargs):
         if os.path.exists('whitelist.txt'):
             with open('whitelist.txt', 'r') as f:
-                whitelist = f.read().split('\n')
-            if self.request.remote_ip not in whitelist:
+                whitelist = ['127.0.0.1'] + [i for i in f.read().split('\n') if i]
+            if self.request_ip not in whitelist:
                 self.render_forbidden()
                 return
 
@@ -163,7 +167,7 @@ class GetCertHandler(MyRequestHandler):
             with open(os.path.join(cert_path, file_name), 'r') as f:
                 ret[file_name] = f.read()
 
-        send_notify('%s download certificate' % self.request.remote_ip)
+        send_notify('%s download certificate' % self.request_ip)
         self.render_success(ret)
 
 
